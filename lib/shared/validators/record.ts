@@ -36,7 +36,7 @@ export const recordFormSchema = z.object({
   occurredAt: z.string().min(1, '请选择日期时间'),
   location: z.string().max(40, '地点最多 40 字').optional(),
   note: z.string().max(300, '备注最多 300 字').optional(),
-  mood: z.enum(MOOD_VALUES).optional(),
+  mood: z.enum(MOOD_VALUES).nullish().transform((v) => v ?? undefined),
   tagIds: z.array(z.string()).optional(),
   isShared: z.boolean(),
 })

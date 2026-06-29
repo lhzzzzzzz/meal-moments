@@ -1,7 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 
-export async function createSupabaseServerClient() {
+// React.cache() 在同一个 render pass 中对所有调用去重，
+// 确保整个请求链路（layout + page + 子组件）共享同一个 Supabase 实例。
+export const createSupabaseServerClient = cache(async () => {
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -24,4 +27,4 @@ export async function createSupabaseServerClient() {
       },
     }
   )
-}
+})

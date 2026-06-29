@@ -278,7 +278,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'record-images',
   'record-images',
-  false,
+  true,
   8388608,  -- 8MB
   array['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 )
@@ -293,13 +293,9 @@ create policy "storage: owner can upload to own folder"
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
-create policy "storage: owner can view own images"
+create policy "storage: anyone can view record images"
   on storage.objects for select
-  to authenticated
-  using (
-    bucket_id = 'record-images' and
-    (storage.foldername(name))[1] = auth.uid()::text
-  );
+  using (bucket_id = 'record-images');
 
 create policy "storage: owner can delete own images"
   on storage.objects for delete
@@ -308,3 +304,14 @@ create policy "storage: owner can delete own images"
     bucket_id = 'record-images' and
     (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================
+-- 表级权限授予
+-- RLS 策略控制行级访问，但角色必须先拥有表级权限
+-- ============================================================
+grant select, insert, update, delete on public.records to authenticated;
+grant select, update on public.profiles to authenticated;
+grant select, insert, delete on public.record_images to authenticated;
+grant select, insert, update, delete on public.tags to authenticated;
+grant select, insert, delete on public.record_tags to authenticated;
+grant select, insert, update, delete on public.share_links to authenticated;

@@ -15,11 +15,24 @@ export const metadata: Metadata = {
 export default async function StatsPage() {
   const user = await getCurrentUser()
 
+  return (
+    <PageShell>
+      <div className="py-5">
+        <h1 className="mb-5 text-xl font-semibold">饮食统计</h1>
+        <Suspense fallback={<StatsSkeleton />}>
+          <StatsLoader userId={user!.id} />
+        </Suspense>
+      </div>
+    </PageShell>
+  )
+}
+
+async function StatsLoader({ userId }: { userId: string }) {
   const supabase = await createSupabaseServerClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('timezone')
-    .eq('id', user!.id)
+    .eq('id', userId)
     .single()
   const timezone = profile?.timezone ?? 'Australia/Sydney'
 
@@ -27,14 +40,22 @@ export default async function StatsPage() {
   const startDate = format(startOfMonth(now), "yyyy-MM-dd'T'00:00:00xxx")
   const endDate = format(endOfMonth(now), "yyyy-MM-dd'T'23:59:59xxx")
 
-  const stats = await getStats(user!.id, startDate, endDate, timezone)
+  const stats = await getStats(userId, startDate, endDate, timezone)
 
+  return <StatsContent initialStats={stats} userId={userId} />
+}
+
+function StatsSkeleton() {
   return (
-    <PageShell>
-      <div className="py-5">
-        <h1 className="mb-5 text-xl font-semibold">饮食统计</h1>
-        <StatsContent initialStats={stats} userId={user!.id} />
+    <div className="space-y-5">
+      <Skeleton className="h-10 w-full rounded-xl" />
+      <div className="grid grid-cols-3 gap-3">
+        <Skeleton className="h-16 rounded-xl" />
+        <Skeleton className="h-16 rounded-xl" />
+        <Skeleton className="h-16 rounded-xl" />
       </div>
-    </PageShell>
+      <Skeleton className="h-48 w-full rounded-xl" />
+      <Skeleton className="h-36 w-full rounded-xl" />
+    </div>
   )
 }

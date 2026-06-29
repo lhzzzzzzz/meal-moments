@@ -186,7 +186,11 @@ export async function updateRecord(
     .eq('id', id)
     .eq('user_id', userId)
 
-  if (error) throw error
+  if (error) {
+    console.error('[updateRecord] DB error', error)
+    throw error
+  }
+  console.log('[updateRecord] records updated successfully')
 
   // 更新标签（先删后插）
   if (input.tagIds !== undefined) {

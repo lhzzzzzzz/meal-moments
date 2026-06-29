@@ -1,11 +1,13 @@
-import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_PATHS = ['/admin', '/settings', '/stats']
+const PROTECTED_PREFIXES = ['/admin', '/stats', '/settings', '/records']
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
+  // 使用 getSession()（读 cookie，无网络请求）做乐观检查，
+  // 并让 Supabase 在需要时自动刷新 access token 写回 cookie。
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,24 +29,19 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  // getSession() 从 cookie 读取，不发起网络请求，用于乐观路由保护。
+  // 真正的安全校验由各 Server Component 内的 getUser() 负责。
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
 
   const { pathname } = request.nextUrl
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
 
-  const isProtected = PROTECTED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
-  )
-
-  if (isProtected && !user) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  if (pathname === '/login' && user) {
-    return NextResponse.redirect(new URL('/admin', request.url))
+  if (!session && isProtected) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
@@ -52,6 +49,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp)$).*)',
   ],
 }

@@ -64,7 +64,8 @@ export function RecordForm({ userId, tags, defaultValues, mode = 'create' }: Rec
       occurredAt: defaultOccurredAt,
       location: defaultValues?.location ?? '',
       note: defaultValues?.note ?? '',
-      mood: defaultValues?.mood as RecordFormValues['mood'],
+      // 数据库返回 null，但 Zod v4 的 .optional() 只接受 undefined，必须转换
+      mood: (defaultValues?.mood ?? undefined) as RecordFormValues['mood'],
       tagIds: defaultValues?.tags?.map((t) => t.id) ?? [],
       isShared: defaultValues?.is_shared ?? true,
     },
@@ -89,25 +90,30 @@ export function RecordForm({ userId, tags, defaultValues, mode = 'create' }: Rec
       })),
     }
 
-    let result
-    if (mode === 'edit' && defaultValues) {
-      result = await apiClient.patch(`/records/${defaultValues.id}`, payload)
-    } else {
-      result = await apiClient.post('/records', payload)
-    }
+    try {
+      let result
+      if (mode === 'edit' && defaultValues) {
+        result = await apiClient.patch(`/records/${defaultValues.id}`, payload)
+      } else {
+        result = await apiClient.post('/records', payload)
+      }
 
-    if (result.error) {
-      toast.error(result.error.message || '保存失败，请重试')
-      return
-    }
+      if (result.error) {
+        toast.error(result.error.message || '保存失败，请重试')
+        return
+      }
 
-    toast.success(mode === 'edit' ? '记录已更新' : '记录已保存')
-    if (mode === 'edit' && defaultValues) {
-      router.push(`/records/${defaultValues.id}`)
-    } else {
-      router.push('/admin')
+      toast.success(mode === 'edit' ? '记录已更新' : '记录已保存')
+      if (mode === 'edit' && defaultValues) {
+        router.push(`/records/${defaultValues.id}`)
+      } else {
+        router.push('/admin')
+      }
+      router.refresh()
+    } catch (err) {
+      console.error('[RecordForm] submit error', err)
+      toast.error('保存失败，请检查网络后重试')
     }
-    router.refresh()
   }
 
   return (
@@ -321,14 +327,14 @@ export function RecordForm({ userId, tags, defaultValues, mode = 'create' }: Rec
               aria-checked={field.value}
               onClick={() => field.onChange(!field.value)}
               className={cn(
-                'relative h-6 w-11 rounded-full transition-colors',
+                'relative h-6 w-11 overflow-hidden rounded-full transition-colors',
                 field.value ? 'bg-primary' : 'bg-muted'
               )}
             >
               <span
                 className={cn(
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                  field.value ? 'translate-x-5' : 'translate-x-0.5'
+                  'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                  field.value ? 'translate-x-5' : 'translate-x-0'
                 )}
               />
             </button>

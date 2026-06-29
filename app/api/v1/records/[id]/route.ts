@@ -42,21 +42,30 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, errorResponse } = await requireOwner()
-  if (errorResponse) return errorResponse
+  if (errorResponse) {
+    console.error('[PATCH /api/v1/records/[id]] auth failed')
+    return errorResponse
+  }
 
   const { id } = await params
+  console.log('[PATCH /api/v1/records/[id]] user:', user.id, 'record:', id)
+
   const body = await request.json()
+  console.log('[PATCH /api/v1/records/[id]] body keys:', Object.keys(body))
 
   // 编辑时同时处理图片差异
   const { images: newImages, ...rest } = body
 
   const parsed = recordFormSchema.safeParse(rest)
   if (!parsed.success) {
+    console.error('[PATCH /api/v1/records/[id]] validation failed', parsed.error.flatten())
     return NextResponse.json(
       { data: null, error: { message: '参数有误', details: parsed.error.flatten() } },
       { status: 400 }
     )
   }
+
+  console.log('[PATCH /api/v1/records/[id]] validation passed, newImages count:', newImages?.length)
 
   try {
     // 获取原有图片，计算需要删除的
@@ -96,7 +105,9 @@ export async function PATCH(
       }
     }
 
+    console.log('[PATCH /api/v1/records/[id]] calling updateRecord...')
     await updateRecord(id, user.id, { ...parsed.data, tagIds: body.tagIds })
+    console.log('[PATCH /api/v1/records/[id]] done, returning success')
     return NextResponse.json({ data: { id }, error: null })
   } catch (err) {
     console.error('[PATCH /api/v1/records/[id]]', err)
