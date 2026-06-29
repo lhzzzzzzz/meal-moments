@@ -1,0 +1,11 @@
+-- 默认标签 seed（可选执行）
+-- 注意：执行前需要替换 'YOUR_USER_ID' 为实际的用户 UUID
+-- 你可以在登录后从 Supabase Dashboard -> Authentication -> Users 中找到你的 UUID
+
+-- INSERT INTO public.tags (user_id, name, color) VALUES
+--   ('YOUR_USER_ID', '外卖', '#F6D78B'),
+--   ('YOUR_USER_ID', '自己做', '#A9C7E8'),
+--   ('YOUR_USER_ID', '食堂', '#EFB4B8'),
+--   ('YOUR_USER_ID', '聚餐', '#B8E8B4'),
+--   ('YOUR_USER_ID', '健康', '#A9C7E8'),
+--   ('YOUR_USER_ID', '甜品', '#EFB4B8');
