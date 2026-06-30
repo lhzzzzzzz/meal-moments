@@ -41,7 +41,8 @@ export const recordFormSchema = z.object({
   isShared: z.boolean(),
 })
 
-export type RecordFormValues = z.infer<typeof recordFormSchema>
+export type RecordFormInput = z.input<typeof recordFormSchema>
+export type RecordFormValues = z.output<typeof recordFormSchema>
 
 export const imageUploadSchema = z.object({
   images: z

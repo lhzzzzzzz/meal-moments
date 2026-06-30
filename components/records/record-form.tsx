@@ -14,7 +14,11 @@ import { FieldError } from '@/components/forms/field-error'
 import { ImagePicker, type UploadedImage } from '@/components/forms/image-picker'
 import { MEAL_TYPES } from '@/lib/shared/constants/meal-types'
 import { MOODS } from '@/lib/shared/constants/moods'
-import { recordFormSchema, type RecordFormValues } from '@/lib/shared/validators/record'
+import {
+  recordFormSchema,
+  type RecordFormInput,
+  type RecordFormValues,
+} from '@/lib/shared/validators/record'
 import { apiClient } from '@/lib/client/api-client'
 import { cn } from '@/lib/utils'
 import { createBrowserClient } from '@supabase/ssr'
@@ -55,7 +59,7 @@ export function RecordForm({ userId, tags, defaultValues, mode = 'create' }: Rec
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RecordFormValues>({
+  } = useForm<RecordFormInput, unknown, RecordFormValues>({
     resolver: zodResolver(recordFormSchema),
     defaultValues: {
       title: defaultValues?.title ?? '',
