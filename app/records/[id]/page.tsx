@@ -22,7 +22,7 @@ export async function generateMetadata({
   const user = await getCurrentUserOrNull()
   if (!user) return { title: '记录详情 - Meal Moments' }
   const record = await getRecordById(id, user.id)
-  return { title: record ? `${record.title} - Meal Moments` : '记录详情 - Meal Moments' }
+  return { title: record?.title ? `${record.title} - Meal Moments` : '记录详情 - Meal Moments' }
 }
 
 export default async function RecordDetailPage({
@@ -93,9 +93,11 @@ export default async function RecordDetailPage({
         {/* 标题和餐别 */}
         <div className="mb-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground">
-              {getMealTypeEmoji(record.meal_type)} {getMealTypeLabel(record.meal_type)}
-            </span>
+            {record.meal_type && (
+              <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground">
+                {getMealTypeEmoji(record.meal_type)} {getMealTypeLabel(record.meal_type)}
+              </span>
+            )}
             {record.mood && (
               <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground">
                 {getMoodEmoji(record.mood)} {getMoodLabel(record.mood)}
@@ -107,13 +109,18 @@ export default async function RecordDetailPage({
               </span>
             )}
           </div>
-          <h1 className="mt-2 text-xl font-semibold text-foreground">{record.title}</h1>
+          <h1 className="mt-2 text-xl font-semibold text-foreground">
+            {record.title ||
+              (record.meal_type
+                ? `${getMealTypeEmoji(record.meal_type)} ${getMealTypeLabel(record.meal_type)}`
+                : '一顿餐')}
+          </h1>
         </div>
 
         {/* 金额 */}
         {record.amount != null && (
           <div className="mb-3 text-2xl font-semibold text-primary">
-            {formatMoneyShort(record.amount)}
+            {formatMoneyShort(record.amount, record.currency)}
           </div>
         )}
 

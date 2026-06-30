@@ -1,9 +1,10 @@
 export function formatMoney(
   amount: number | null | undefined,
-  currency = 'CNY'
+  currency = 'AUD'
 ): string {
   if (amount === null || amount === undefined) return ''
-  return new Intl.NumberFormat('zh-CN', {
+  const locale = currency === 'CNY' ? 'zh-CN' : 'en-AU'
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -11,7 +12,9 @@ export function formatMoney(
   }).format(amount)
 }
 
-export function formatMoneyShort(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return ''
-  return `¥${amount.toFixed(2)}`
+export function formatMoneyShort(
+  amount: number | null | undefined,
+  currency = 'AUD'
+): string {
+  return formatMoney(amount, currency)
 }

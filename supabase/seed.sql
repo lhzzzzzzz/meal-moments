@@ -1,11 +1,18 @@
--- 默认标签 seed（可选执行）
--- 注意：执行前需要替换 'YOUR_USER_ID' 为实际的用户 UUID
--- 你可以在登录后从 Supabase Dashboard -> Authentication -> Users 中找到你的 UUID
+-- 默认标签 seed
+-- 在 Supabase Dashboard -> SQL Editor 中执行
+-- 将下面的邮箱替换成你登录 Meal Moments 时用的邮箱
 
--- INSERT INTO public.tags (user_id, name, color) VALUES
---   ('YOUR_USER_ID', '外卖', '#F6D78B'),
---   ('YOUR_USER_ID', '自己做', '#A9C7E8'),
---   ('YOUR_USER_ID', '食堂', '#EFB4B8'),
---   ('YOUR_USER_ID', '聚餐', '#B8E8B4'),
---   ('YOUR_USER_ID', '健康', '#A9C7E8'),
---   ('YOUR_USER_ID', '甜品', '#EFB4B8');
+insert into public.tags (user_id, name, color)
+select u.id, t.name, t.color
+from auth.users u
+cross join (
+  values
+    ('外卖', '#F6D78B'),
+    ('自己做', '#A9C7E8'),
+    ('食堂', '#EFB4B8'),
+    ('聚餐', '#B8E8B4'),
+    ('健康', '#A9C7E8'),
+    ('甜品', '#EFB4B8')
+) as t(name, color)
+where u.email = 'YOUR_EMAIL@example.com'
+on conflict (user_id, name) do nothing;

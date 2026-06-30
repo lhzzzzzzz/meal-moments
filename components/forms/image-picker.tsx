@@ -43,6 +43,7 @@ export function ImagePicker({
   async function handleFiles(files: FileList) {
     const available = maxImages - value.length
     const toProcess = Array.from(files).slice(0, available)
+    let accumulated = [...value]
 
     if (toProcess.length === 0) {
       toast.error(`最多上传 ${maxImages} 张图片`)
@@ -86,7 +87,8 @@ export function ImagePicker({
           previewUrl: URL.createObjectURL(compressed.file),
         }
 
-        onChange([...value, newImage])
+        accumulated = [...accumulated, newImage]
+        onChange(accumulated)
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '上传失败，请重试'
         toast.error(message)
@@ -170,7 +172,7 @@ export function ImagePicker({
       />
 
       <p className="mt-1.5 text-xs text-muted-foreground">
-        {value.length}/{maxImages} 张 · 支持 JPG、PNG、WebP，单张最大 8MB
+        {value.length}/{maxImages}
       </p>
     </div>
   )

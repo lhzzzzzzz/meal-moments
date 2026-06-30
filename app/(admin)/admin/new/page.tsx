@@ -4,6 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { RecordForm } from '@/components/records/record-form'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { getTagsByUser } from '@/lib/server/db/tags'
+import { getUserTimezone } from '@/lib/server/db/profiles'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
 
 export default async function NewRecordPage() {
   const user = await getCurrentUser()
-  const tags = await getTagsByUser(user!.id)
+  const [tags, timezone] = await Promise.all([
+    getTagsByUser(user!.id),
+    getUserTimezone(user!.id),
+  ])
 
   return (
     <PageShell>
@@ -27,7 +31,7 @@ export default async function NewRecordPage() {
           </Link>
           <h1 className="text-lg font-semibold">记录一餐</h1>
         </div>
-        <RecordForm userId={user!.id} tags={tags} mode="create" />
+        <RecordForm userId={user!.id} tags={tags} timezone={timezone} mode="create" />
       </div>
     </PageShell>
   )

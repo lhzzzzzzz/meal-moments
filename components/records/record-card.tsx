@@ -40,20 +40,25 @@ export function RecordCard({ record, isOwner }: RecordCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="line-clamp-1 text-sm font-medium text-foreground">
-              {record.title}
+              {record.title ||
+                (record.meal_type
+                  ? `${getMealTypeEmoji(record.meal_type)} ${getMealTypeLabel(record.meal_type)}`
+                  : '一顿餐')}
             </h3>
             {record.amount != null && (
               <span className="flex-shrink-0 text-sm font-medium text-primary">
-                {formatMoneyShort(record.amount)}
+                {formatMoneyShort(record.amount, record.currency)}
               </span>
             )}
           </div>
 
           {/* 元信息行 */}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">
-              {getMealTypeEmoji(record.meal_type)} {getMealTypeLabel(record.meal_type)}
-            </span>
+            {record.meal_type && (
+              <span className="text-xs text-muted-foreground">
+                {getMealTypeEmoji(record.meal_type)} {getMealTypeLabel(record.meal_type)}
+              </span>
+            )}
             {record.mood && (
               <span className="text-xs text-muted-foreground">
                 {getMoodEmoji(record.mood)}

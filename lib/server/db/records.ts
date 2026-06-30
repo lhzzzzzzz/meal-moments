@@ -120,13 +120,13 @@ export async function createRecord(
     .from('records')
     .insert({
       user_id: userId,
-      title: input.title,
+      title: input.title?.trim() || '',
       note: input.note ?? null,
-      meal_type: input.mealType,
+      meal_type: input.mealType || '',
       mood: input.mood ?? null,
       location: input.location ?? null,
       amount: input.amount ? parseFloat(input.amount) : null,
-      currency: 'CNY',
+      currency: input.currency,
       occurred_at: input.occurredAt,
       is_shared: input.isShared,
     })
@@ -170,13 +170,14 @@ export async function updateRecord(
   const supabase = await createSupabaseServerClient()
 
   const updateData: Record<string, unknown> = {}
-  if (input.title !== undefined) updateData.title = input.title
+  if (input.title !== undefined) updateData.title = input.title.trim() || ''
   if (input.note !== undefined) updateData.note = input.note ?? null
-  if (input.mealType !== undefined) updateData.meal_type = input.mealType
+  if (input.mealType !== undefined) updateData.meal_type = input.mealType || ''
   if (input.mood !== undefined) updateData.mood = input.mood ?? null
   if (input.location !== undefined) updateData.location = input.location ?? null
   if (input.amount !== undefined)
     updateData.amount = input.amount ? parseFloat(input.amount) : null
+  if (input.currency !== undefined) updateData.currency = input.currency
   if (input.occurredAt !== undefined) updateData.occurred_at = input.occurredAt
   if (input.isShared !== undefined) updateData.is_shared = input.isShared
 

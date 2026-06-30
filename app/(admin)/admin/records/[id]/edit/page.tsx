@@ -6,6 +6,7 @@ import { RecordForm } from '@/components/records/record-form'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { getRecordById } from '@/lib/server/db/records'
 import { getTagsByUser } from '@/lib/server/db/tags'
+import { getUserTimezone } from '@/lib/server/db/profiles'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -19,9 +20,10 @@ export default async function EditRecordPage({
 }) {
   const { id } = await params
   const user = await getCurrentUser()
-  const [record, tags] = await Promise.all([
+  const [record, tags, timezone] = await Promise.all([
     getRecordById(id, user!.id),
     getTagsByUser(user!.id),
+    getUserTimezone(user!.id),
   ])
 
   if (!record) notFound()
@@ -39,7 +41,13 @@ export default async function EditRecordPage({
           </Link>
           <h1 className="text-lg font-semibold">编辑记录</h1>
         </div>
-        <RecordForm userId={user!.id} tags={tags} defaultValues={record} mode="edit" />
+        <RecordForm
+          userId={user!.id}
+          tags={tags}
+          timezone={timezone}
+          defaultValues={record}
+          mode="edit"
+        />
       </div>
     </PageShell>
   )

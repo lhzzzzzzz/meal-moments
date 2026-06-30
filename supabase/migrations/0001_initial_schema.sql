@@ -279,7 +279,7 @@ values (
   'record-images',
   'record-images',
   true,
-  8388608,  -- 8MB
+  2097152,  -- 2MB
   array['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 )
 on conflict (id) do nothing;

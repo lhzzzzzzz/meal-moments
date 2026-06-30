@@ -1,7 +1,4 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
-import { PlusCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { PageShell } from '@/components/layout/page-shell'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
@@ -33,18 +30,9 @@ export default async function AdminPage() {
     <PageShell>
       <div className="py-6">
         {/* 顶部问候 */}
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{greeting}，</p>
-            <h1 className="text-2xl font-semibold text-foreground">{displayName}</h1>
-          </div>
-          <Link
-            href="/admin/new"
-            className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-primary px-2.5 text-[0.8rem] font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-          >
-            <PlusCircle size={16} />
-            记录一餐
-          </Link>
+        <div className="mb-5">
+          <p className="text-sm text-muted-foreground">{greeting}，</p>
+          <h1 className="text-2xl font-semibold text-foreground">{displayName}</h1>
         </div>
 
         {/* 今日摘要 */}

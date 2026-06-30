@@ -68,7 +68,7 @@ export function StatsContent({ initialStats }: StatsContentProps) {
       <div className="mb-5 grid grid-cols-3 gap-3">
         <SummaryCard
           label="总花费"
-          value={formatMoneyShort(stats.totalAmount) || '¥0.00'}
+          value={formatMoneyShort(stats.totalAmount) || formatMoneyShort(0)}
           color="text-primary"
         />
         <SummaryCard label="记录数" value={`${stats.recordCount} 条`} />
