@@ -11,7 +11,7 @@ export async function POST() {
     return NextResponse.json({ data: { token: shareLink.token }, error: null })
   } catch {
     return NextResponse.json(
-      { data: null, error: { message: '重新生成失败' } },
+      { data: null, error: { code: 'REGENERATE_FAILED', message: 'REGENERATE_FAILED' } },
       { status: 500 }
     )
   }

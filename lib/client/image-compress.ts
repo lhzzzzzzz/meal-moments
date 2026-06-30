@@ -1,4 +1,6 @@
-const MAX_SIZE_BYTES = 2 * 1024 * 1024 // 2MB，与 Supabase bucket file_size_limit 一致
+import type { Translator } from '@/lib/i18n/t'
+
+const MAX_SIZE_BYTES = 2 * 1024 * 1024
 const INITIAL_QUALITY = 0.85
 const MAX_DIMENSION = 1920
 const MIN_DIMENSION = 640
@@ -16,7 +18,7 @@ export function isAllowedImageType(file: File): boolean {
   return ALLOWED_TYPES.includes(file.type)
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+function loadImage(file: File, t: Translator): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -28,7 +30,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('图片加载失败'))
+      reject(new Error(t('imageCompress.loadFailed')))
     }
 
     img.src = url
@@ -56,7 +58,8 @@ function scaleDimensions(width: number, height: number, maxDimension: number) {
 function drawImageSource(
   source: CanvasImageSource,
   width: number,
-  height: number
+  height: number,
+  t: Translator
 ) {
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -64,15 +67,20 @@ function drawImageSource(
 
   const ctx = canvas.getContext('2d')
   if (!ctx) {
-    throw new Error('无法创建 canvas context')
+    throw new Error(t('imageCompress.canvasFailed'))
   }
 
   ctx.drawImage(source, 0, 0, width, height)
   return canvas
 }
 
-function drawToCanvas(img: HTMLImageElement, width: number, height: number) {
-  return drawImageSource(img, width, height)
+function drawToCanvas(
+  img: HTMLImageElement,
+  width: number,
+  height: number,
+  t: Translator
+) {
+  return drawImageSource(img, width, height, t)
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
@@ -81,7 +89,10 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob 
   })
 }
 
-async function compressCanvasToLimit(canvas: HTMLCanvasElement): Promise<{
+async function compressCanvasToLimit(
+  canvas: HTMLCanvasElement,
+  t: Translator
+): Promise<{
   blob: Blob
   width: number
   height: number
@@ -110,24 +121,27 @@ async function compressCanvasToLimit(canvas: HTMLCanvasElement): Promise<{
       break
     }
 
-    currentCanvas = drawImageSource(currentCanvas, nextWidth, nextHeight)
+    currentCanvas = drawImageSource(currentCanvas, nextWidth, nextHeight, t)
     width = nextWidth
     height = nextHeight
   }
 
-  throw new Error('图片压缩后仍超过 2MB，请换一张较小的图片')
+  throw new Error(t('imageCompress.tooLarge'))
 }
 
-export async function compressImage(file: File): Promise<CompressedImage> {
+export async function compressImage(
+  file: File,
+  t: Translator
+): Promise<CompressedImage> {
   if (!isAllowedImageType(file)) {
-    throw new Error('不支持的文件格式。请上传 JPG、PNG 或 WebP 图片。')
+    throw new Error(t('imageCompress.unsupportedType'))
   }
 
-  const img = await loadImage(file)
+  const img = await loadImage(file, t)
   const { width, height } = scaleDimensions(img.naturalWidth, img.naturalHeight, MAX_DIMENSION)
-  const canvas = drawToCanvas(img, width, height)
+  const canvas = drawToCanvas(img, width, height, t)
   const { blob, width: finalWidth, height: finalHeight } =
-    await compressCanvasToLimit(canvas)
+    await compressCanvasToLimit(canvas, t)
 
   const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
     type: 'image/jpeg',

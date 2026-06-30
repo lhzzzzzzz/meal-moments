@@ -3,22 +3,25 @@ import { PageShell } from '@/components/layout/page-shell'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
 import { getStats } from '@/lib/server/db/stats'
+import { getTranslator } from '@/lib/i18n/get-locale'
 import { StatsContent } from './stats-content'
 import { Skeleton } from '@/components/ui/skeleton'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: '饮食统计 - Meal Moments',
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator()
+  return { title: `${t('stats.title')} - Meal Moments` }
 }
 
 export default async function StatsPage() {
   const user = await getCurrentUser()
+  const { t } = await getTranslator()
 
   return (
     <PageShell>
       <div className="py-5">
-        <h1 className="mb-5 text-xl font-semibold">饮食统计</h1>
+        <h1 className="mb-5 text-xl font-semibold">{t('stats.title')}</h1>
         <Suspense fallback={<StatsSkeleton />}>
           <StatsLoader userId={user!.id} />
         </Suspense>

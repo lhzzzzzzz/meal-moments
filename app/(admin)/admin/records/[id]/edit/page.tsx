@@ -7,10 +7,12 @@ import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { getRecordById } from '@/lib/server/db/records'
 import { getTagsByUser } from '@/lib/server/db/tags'
 import { getUserTimezone } from '@/lib/server/db/profiles'
+import { getTranslator } from '@/lib/i18n/get-locale'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: '编辑记录 - Meal Moments',
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator()
+  return { title: `${t('record.editRecord')} - Meal Moments` }
 }
 
 export default async function EditRecordPage({
@@ -20,13 +22,14 @@ export default async function EditRecordPage({
 }) {
   const { id } = await params
   const user = await getCurrentUser()
+  const { t } = await getTranslator()
   const [record, tags, timezone] = await Promise.all([
-    getRecordById(id, user!.id),
+    getRecordById(id),
     getTagsByUser(user!.id),
     getUserTimezone(user!.id),
   ])
 
-  if (!record) notFound()
+  if (!record || record.user_id !== user!.id) notFound()
 
   return (
     <PageShell>
@@ -35,11 +38,11 @@ export default async function EditRecordPage({
           <Link
             href={`/records/${id}`}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="返回"
+            aria-label={t('common.back')}
           >
             <ArrowLeft size={18} />
           </Link>
-          <h1 className="text-lg font-semibold">编辑记录</h1>
+          <h1 className="text-lg font-semibold">{t('record.editRecord')}</h1>
         </div>
         <RecordForm
           userId={user!.id}

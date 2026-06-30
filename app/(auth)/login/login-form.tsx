@@ -7,11 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { clearGuestModeAction } from '@/app/guest/settings/actions'
+import { useT } from '@/components/i18n/locale-provider'
 
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? '/admin'
+  const t = useT()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,13 +32,16 @@ export function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      toast.error(error.message === 'Invalid login credentials'
-        ? '邮箱或密码不正确'
-        : '登录失败，请重试')
+      toast.error(
+        error.message === 'Invalid login credentials'
+          ? t('login.invalidCredentials')
+          : t('login.failed')
+      )
       setLoading(false)
       return
     }
 
+    await clearGuestModeAction()
     router.push(redirectTo)
     router.refresh()
   }
@@ -43,7 +49,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="email">邮箱</Label>
+        <Label htmlFor="email">{t('login.email')}</Label>
         <Input
           id="email"
           type="email"
@@ -55,7 +61,7 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">密码</Label>
+        <Label htmlFor="password">{t('login.password')}</Label>
         <Input
           id="password"
           type="password"
@@ -67,7 +73,7 @@ export function LoginForm() {
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? '登录中…' : '登录'}
+        {loading ? t('login.submitting') : t('login.submit')}
       </Button>
     </form>
   )

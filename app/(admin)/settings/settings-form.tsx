@@ -8,10 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { createBrowserClient } from '@supabase/ssr'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
+import { useT } from '@/components/i18n/locale-provider'
+import { translateError } from '@/lib/i18n/t'
 import { apiClient } from '@/lib/client/api-client'
-import { cn } from '@/lib/utils'
 import type { DbProfile, DbShareLink } from '@/types/record'
 
 interface SettingsFormProps {
@@ -22,6 +25,7 @@ interface SettingsFormProps {
 
 export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) {
   const router = useRouter()
+  const t = useT()
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [shareTitle, setShareTitle] = useState(profile?.share_title ?? '')
   const [shareDescription, setShareDescription] = useState(profile?.share_description ?? '')
@@ -40,7 +44,7 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
 
   async function handleSaveProfile() {
     if (!displayName.trim()) {
-      toast.error('展示名不能为空')
+      toast.error(t('settings.displayNameRequired'))
       return
     }
     setSaving(true)
@@ -51,21 +55,20 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
     })
     setSaving(false)
     if (result.error) {
-      toast.error('保存失败')
+      toast.error(translateError(t, result.error) || t('settings.saveFailed'))
     } else {
-      toast.success('已保存')
+      toast.success(t('settings.saved'))
       router.refresh()
     }
   }
 
-  async function handleToggleShare() {
-    const newEnabled = !shareEnabled
+  async function handleToggleShare(newEnabled: boolean) {
     const result = await apiClient.patch('/settings/share', { isEnabled: newEnabled })
     if (result.error) {
-      toast.error('操作失败')
+      toast.error(translateError(t, result.error) || t('settings.operationFailed'))
     } else {
       setShareEnabled(newEnabled)
-      toast.success(newEnabled ? '分享已开启' : '分享已关闭')
+      toast.success(newEnabled ? t('settings.shareEnabled') : t('settings.shareDisabledToast'))
     }
   }
 
@@ -74,11 +77,11 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
     const result = await apiClient.post('/settings/share/regenerate', {})
     setRegenerating(false)
     if (result.error) {
-      toast.error('操作失败')
+      toast.error(translateError(t, result.error) || t('settings.operationFailed'))
     } else {
       const data = result.data as { token: string }
       setToken(data.token)
-      toast.success('分享链接已更新，旧链接已失效')
+      toast.success(t('settings.linkRegenerated'))
     }
   }
 
@@ -95,84 +98,71 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
 
   return (
     <div className="space-y-6 pb-8">
-      {/* 个人信息 */}
       <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="mb-4 text-sm font-semibold">个人信息</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t('settings.profile')}</h2>
         <div className="space-y-3">
           <div>
-            <Label htmlFor="displayName">展示名</Label>
+            <Label htmlFor="displayName">{t('settings.displayName')}</Label>
             <Input
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="你的名字"
+              placeholder={t('settings.displayNamePlaceholder')}
               className="mt-1.5"
             />
           </div>
           <div>
-            <Label htmlFor="shareTitle">分享页标题</Label>
+            <Label htmlFor="shareTitle">{t('settings.shareTitle')}</Label>
             <Input
               id="shareTitle"
               value={shareTitle}
               onChange={(e) => setShareTitle(e.target.value)}
-              placeholder={`${displayName || '我'}的生活记录`}
+              placeholder={t('settings.shareTitlePlaceholder', {
+                name: displayName || t('common.me'),
+              })}
               className="mt-1.5"
             />
           </div>
           <div>
-            <Label htmlFor="shareDescription">分享页描述</Label>
+            <Label htmlFor="shareDescription">{t('settings.shareDescription')}</Label>
             <Textarea
               id="shareDescription"
               value={shareDescription}
               onChange={(e) => setShareDescription(e.target.value)}
-              placeholder="一句话介绍自己的分享页"
+              placeholder={t('settings.shareDescriptionPlaceholder')}
               rows={2}
               className="mt-1.5 resize-none"
             />
           </div>
           <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-            {saving ? '保存中…' : '保存'}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </div>
       </section>
 
-      {/* 分享设置 */}
       <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="mb-4 text-sm font-semibold">分享设置</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t('settings.language')}</h2>
+        <LocaleSwitcher />
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h2 className="mb-4 text-sm font-semibold">{t('settings.shareSettings')}</h2>
         <div className="space-y-3">
-          {/* 开关 */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">开启分享</p>
-              <p className="text-xs text-muted-foreground">关闭后所有分享链接均不可访问</p>
+              <p className="text-sm font-medium">{t('settings.enableShare')}</p>
+              <p className="text-xs text-muted-foreground">{t('settings.enableShareHint')}</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={shareEnabled}
-              onClick={handleToggleShare}
-              className={cn(
-                'relative h-6 w-11 rounded-full transition-colors',
-                shareEnabled ? 'bg-primary' : 'bg-muted'
-              )}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                  shareEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                )}
-              />
-            </button>
+            <Switch checked={shareEnabled} onCheckedChange={handleToggleShare} />
           </div>
 
           <Separator />
 
-          {/* 分享链接 */}
           <div>
-            <Label>分享链接</Label>
+            <Label>{t('settings.shareLink')}</Label>
             <div className="mt-1.5 flex gap-2">
               <Input
-                value={shareEnabled ? shareUrl : '（分享已关闭）'}
+                value={shareEnabled ? shareUrl : t('settings.shareDisabled')}
                 readOnly
                 className="text-xs text-muted-foreground"
               />
@@ -182,7 +172,7 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
                 size="icon"
                 onClick={handleCopy}
                 disabled={!shareEnabled}
-                aria-label="复制链接"
+                aria-label={t('settings.copyLink')}
               >
                 {copied ? <Check size={16} className="text-primary" /> : <Copy size={16} />}
               </Button>
@@ -197,17 +187,14 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
             className="w-full gap-1.5"
           >
             <RefreshCw size={14} className={regenerating ? 'animate-spin' : ''} />
-            {regenerating ? '重新生成中…' : '重新生成链接'}
+            {regenerating ? t('settings.regenerating') : t('settings.regenerateLink')}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            重新生成后旧链接立即失效，请及时将新链接发送给家人。
-          </p>
+          <p className="text-xs text-muted-foreground">{t('settings.regenerateHint')}</p>
         </div>
       </section>
 
-      {/* 账号 */}
       <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="mb-4 text-sm font-semibold">账号</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t('settings.account')}</h2>
         <Button
           type="button"
           variant="outline"
@@ -215,7 +202,7 @@ export function SettingsForm({ profile, shareLink, appUrl }: SettingsFormProps) 
           className="w-full gap-1.5 text-destructive"
         >
           <LogOut size={14} />
-          退出登录
+          {t('settings.logout')}
         </Button>
       </section>
     </div>

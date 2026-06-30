@@ -62,3 +62,52 @@ export function isFutureDatetimeLocal(value: string, timeZone: string): boolean 
   if (!value) return false
   return new Date(fromDatetimeLocalValue(value, timeZone)).getTime() > Date.now()
 }
+
+export function parseDatetimeLocal(value: string) {
+  const [datePart = '', timePart = '00:00'] = value.split('T')
+  const [hour = 0, minute = 0] = timePart.split(':').map(Number)
+  return { datePart, hour, minute }
+}
+
+export function buildDatetimeLocal(
+  datePart: string,
+  hour: number,
+  minute: number
+): string {
+  const safeHour = String(Math.min(23, Math.max(0, hour))).padStart(2, '0')
+  const safeMinute = String(Math.min(59, Math.max(0, minute))).padStart(2, '0')
+  return `${datePart}T${safeHour}:${safeMinute}`
+}
+
+export function parseDatePart(datePart: string): Date {
+  const [year, month, day] = datePart.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+export function toDatePart(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/** 将 datetime-local 限制在时区下的当前时刻之前 */
+export function clampDatetimeLocal(value: string, timeZone: string): string {
+  if (!value) return value
+  if (isFutureDatetimeLocal(value, timeZone)) {
+    return nowInTimezone(timeZone)
+  }
+  return value
+}
+
+export function getTodayDatePart(timeZone: string): string {
+  return nowInTimezone(timeZone).split('T')[0]
+}
+
+export function getMaxTimeForDatePart(
+  datePart: string,
+  timeZone: string
+): { hour: number; minute: number } | null {
+  const todayPart = getTodayDatePart(timeZone)
+  if (datePart !== todayPart) return null
+  const { hour, minute } = parseDatetimeLocal(nowInTimezone(timeZone))
+  return { hour, minute }
+}

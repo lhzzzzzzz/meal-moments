@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
 import type { CreateRecordInput } from '@/lib/shared/validators/record'
 import type { RecordWithImages, RecordListItem } from '@/types/record'
+import { HOME_FEED_PAGE_SIZE } from '@/lib/shared/constants/feed'
 
 export interface GetRecordsOptions {
   page?: number
@@ -13,11 +14,34 @@ export interface GetRecordsOptions {
   userId: string
 }
 
+function mapRecordRows(data: any[]): RecordListItem[] {
+  return data.map((r: any) => {
+    const sortedImages = (r.record_images ?? []).sort(
+      (a: any, b: any) => a.sort_order - b.sort_order
+    )
+    return {
+      id: r.id,
+      user_id: r.user_id,
+      author_name: r.profiles?.display_name ?? null,
+      title: r.title,
+      meal_type: r.meal_type,
+      mood: r.mood,
+      amount: r.amount,
+      currency: r.currency,
+      occurred_at: r.occurred_at,
+      is_shared: r.is_shared,
+      note: r.note,
+      cover_image: sortedImages[0]?.public_url ?? null,
+      tags: (r.record_tags ?? []).map((rt: any) => rt.tags).filter(Boolean),
+    }
+  })
+}
+
 export async function getRecords(options: GetRecordsOptions) {
   const supabase = await createSupabaseServerClient()
   const {
     page = 1,
-    pageSize = 20,
+    pageSize = HOME_FEED_PAGE_SIZE,
     mealType,
     startDate,
     endDate,
@@ -29,7 +53,7 @@ export async function getRecords(options: GetRecordsOptions) {
     .from('records')
     .select(
       `
-      id, title, meal_type, mood, amount, currency, occurred_at, is_shared, note,
+      id, user_id, title, meal_type, mood, amount, currency, occurred_at, is_shared, note,
       record_images!inner(public_url, sort_order),
       record_tags(tag_id, tags(id, name, color))
     `,
@@ -50,24 +74,7 @@ export async function getRecords(options: GetRecordsOptions) {
 
   if (error) throw error
 
-  const records: RecordListItem[] = (data ?? []).map((r: any) => {
-    const sortedImages = (r.record_images ?? []).sort(
-      (a: any, b: any) => a.sort_order - b.sort_order
-    )
-    return {
-      id: r.id,
-      title: r.title,
-      meal_type: r.meal_type,
-      mood: r.mood,
-      amount: r.amount,
-      currency: r.currency,
-      occurred_at: r.occurred_at,
-      is_shared: r.is_shared,
-      note: r.note,
-      cover_image: sortedImages[0]?.public_url ?? null,
-      tags: (r.record_tags ?? []).map((rt: any) => rt.tags).filter(Boolean),
-    }
-  })
+  const records = mapRecordRows(data ?? [])
 
   return {
     records,
@@ -76,10 +83,60 @@ export async function getRecords(options: GetRecordsOptions) {
   }
 }
 
-export async function getRecordById(
-  id: string,
-  userId: string
-): Promise<RecordWithImages | null> {
+export async function getCommunityRecords(options: {
+  page?: number
+  pageSize?: number
+}) {
+  const supabase = await createSupabaseServerClient()
+  const { page = 1, pageSize = HOME_FEED_PAGE_SIZE } = options
+
+  const from = (page - 1) * pageSize
+
+  const { data, error, count } = await supabase
+    .from('records')
+    .select(
+      `
+      id, user_id, title, meal_type, mood, amount, currency, occurred_at, is_shared, note,
+      record_images!inner(public_url, sort_order),
+      record_tags(tag_id, tags(id, name, color))
+    `,
+      { count: 'exact' }
+    )
+    .eq('is_shared', true)
+    .order('occurred_at', { ascending: false })
+    .range(from, from + pageSize - 1)
+
+  if (error) throw error
+
+  const rows = data ?? []
+  const userIds = [...new Set(rows.map((r: any) => r.user_id as string))]
+
+  let nameMap: Record<string, string> = {}
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', userIds)
+    nameMap = Object.fromEntries(
+      (profiles ?? []).map((p) => [p.id, p.display_name])
+    )
+  }
+
+  const records = mapRecordRows(
+    rows.map((r: any) => ({
+      ...r,
+      profiles: { display_name: nameMap[r.user_id] ?? null },
+    }))
+  )
+
+  return {
+    records,
+    total: count ?? 0,
+    nextPage: from + pageSize < (count ?? 0) ? page + 1 : null,
+  }
+}
+
+export async function getRecordById(id: string): Promise<RecordWithImages | null> {
   const supabase = await createSupabaseServerClient()
 
   const { data, error } = await supabase
@@ -92,7 +149,6 @@ export async function getRecordById(
     `
     )
     .eq('id', id)
-    .eq('user_id', userId)
     .single()
 
   if (error) {

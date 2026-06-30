@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Plus, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createBrowserClient } from '@supabase/ssr'
+import { useT } from '@/components/i18n/locale-provider'
 import { compressImage, isAllowedImageType } from '@/lib/client/image-compress'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ export function ImagePicker({
   disabled,
   maxImages = 6,
 }: ImagePickerProps) {
+  const t = useT()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState<string[]>([])
 
@@ -46,13 +48,13 @@ export function ImagePicker({
     let accumulated = [...value]
 
     if (toProcess.length === 0) {
-      toast.error(`最多上传 ${maxImages} 张图片`)
+      toast.error(t('imagePicker.maxImages', { max: maxImages }))
       return
     }
 
     for (const file of toProcess) {
       if (!isAllowedImageType(file)) {
-        toast.error(`${file.name} 格式不支持，请上传 JPG、PNG 或 WebP 图片`)
+        toast.error(t('imagePicker.unsupportedFormat', { name: file.name }))
         continue
       }
 
@@ -60,7 +62,7 @@ export function ImagePicker({
       setUploading((prev) => [...prev, tempId])
 
       try {
-        const compressed = await compressImage(file)
+        const compressed = await compressImage(file, t)
         const timestamp = Date.now()
         const ext = 'jpg'
         const storagePath = `${userId}/${timestamp}-${Math.random().toString(36).slice(2)}.${ext}`
@@ -90,7 +92,8 @@ export function ImagePicker({
         accumulated = [...accumulated, newImage]
         onChange(accumulated)
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : '上传失败，请重试'
+        const message =
+          err instanceof Error ? err.message : t('imagePicker.uploadFailed')
         toast.error(message)
       } finally {
         setUploading((prev) => prev.filter((id) => id !== tempId))
@@ -117,7 +120,7 @@ export function ImagePicker({
           >
             <Image
               src={img.previewUrl || img.publicUrl}
-              alt={`图片 ${idx + 1}`}
+              alt={t('common.imageN', { n: idx + 1 })}
               fill
               className="object-cover"
               sizes="120px"
@@ -127,7 +130,7 @@ export function ImagePicker({
                 type="button"
                 onClick={() => removeImage(idx)}
                 className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white transition-opacity hover:bg-black/80"
-                aria-label="删除图片"
+                aria-label={t('common.removeImage')}
               >
                 <X size={12} />
               </button>
@@ -135,7 +138,6 @@ export function ImagePicker({
           </div>
         ))}
 
-        {/* 上传中占位 */}
         {uploading.map((id) => (
           <div
             key={id}
@@ -145,7 +147,6 @@ export function ImagePicker({
           </div>
         ))}
 
-        {/* 添加按钮 */}
         {canAdd && !isUploading && (
           <button
             type="button"
@@ -155,7 +156,7 @@ export function ImagePicker({
               'text-muted-foreground transition-colors hover:border-primary hover:text-primary',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
-            aria-label="添加图片"
+            aria-label={t('common.addImage')}
           >
             <Plus size={24} />
           </button>

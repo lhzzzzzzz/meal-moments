@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/server/auth/require-owner'
-import { updateProfileSchema } from '@/lib/shared/validators/share'
+import { createUpdateProfileSchema } from '@/lib/shared/validators/share'
+import { getTranslator } from '@/lib/i18n/get-locale'
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
 
 export async function PATCH(request: NextRequest) {
   const { user, errorResponse } = await requireOwner()
   if (errorResponse) return errorResponse
 
+  const { t } = await getTranslator()
   const body = await request.json()
-  const parsed = updateProfileSchema.safeParse(body)
+  const parsed = createUpdateProfileSchema(t).safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
-      { data: null, error: { message: '参数有误' } },
+      { data: null, error: { code: 'INVALID_PARAMS', message: 'INVALID_PARAMS' } },
       { status: 400 }
     )
   }
@@ -28,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 
   if (error) {
     return NextResponse.json(
-      { data: null, error: { message: '保存失败' } },
+      { data: null, error: { code: 'SAVE_PROFILE_FAILED', message: 'SAVE_PROFILE_FAILED' } },
       { status: 500 }
     )
   }

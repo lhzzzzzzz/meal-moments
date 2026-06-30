@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
   let startDate = searchParams.get('startDate')
   let endDate = searchParams.get('endDate')
 
-  // 获取用户时区
   const supabase = await createSupabaseServerClient()
   const { data: profile } = await supabase
     .from('profiles')
@@ -31,7 +30,6 @@ export async function GET(request: NextRequest) {
       startDate = format(startOfMonth(subMonths(now, 2)), "yyyy-MM-dd'T'00:00:00xxx")
       endDate = format(endOfMonth(now), "yyyy-MM-dd'T'23:59:59xxx")
     } else {
-      // month (default)
       startDate = format(startOfMonth(now), "yyyy-MM-dd'T'00:00:00xxx")
       endDate = format(endOfMonth(now), "yyyy-MM-dd'T'23:59:59xxx")
     }
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[GET /api/v1/stats]', err)
     return NextResponse.json(
-      { data: null, error: { message: '获取统计失败' } },
+      { data: null, error: { code: 'FETCH_STATS_FAILED', message: 'FETCH_STATS_FAILED' } },
       { status: 500 }
     )
   }

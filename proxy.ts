@@ -1,9 +1,28 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  checkPublicRouteRateLimit,
+  isPublicRateLimitedPath,
+} from '@/lib/server/rate-limit'
 
 const PROTECTED_PREFIXES = ['/admin', '/stats', '/settings', '/records']
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  if (isPublicRateLimitedPath(pathname)) {
+    const { limited } = await checkPublicRouteRateLimit(request)
+    if (limited) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { data: null, error: { message: '请求过于频繁，请稍后再试' } },
+          { status: 429 }
+        )
+      }
+      return new NextResponse('请求过于频繁，请稍后再试', { status: 429 })
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   // 使用 getSession()（读 cookie，无网络请求）做乐观检查，
@@ -35,12 +54,17 @@ export async function proxy(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  const { pathname } = request.nextUrl
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
 
   if (!session && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (session && pathname.startsWith('/guest')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin'
     return NextResponse.redirect(url)
   }
 

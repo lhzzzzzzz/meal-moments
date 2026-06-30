@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
+import { LocaleProvider } from '@/components/i18n/locale-provider'
+import { getLocale, getTranslator } from '@/lib/i18n/get-locale'
+import { localeToHtmlLang } from '@/lib/i18n/config'
 
-export const metadata: Metadata = {
-  title: 'Meal Moments',
-  description: '记录每日饮食，分享给在意的人',
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator()
+  return {
+    title: t('meta.appName'),
+    description: t('meta.description'),
+  }
 }
 
 export const viewport: Viewport = {
@@ -14,15 +20,17 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getLocale()
+
   return (
-    <html lang="zh-CN" className="h-full">
+    <html lang={localeToHtmlLang(locale)} className="h-full">
       <body className="min-h-full bg-background text-foreground antialiased">
-        {children}
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
         <Toaster position="top-center" richColors />
       </body>
     </html>

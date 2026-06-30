@@ -18,9 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { FieldError } from '@/components/forms/field-error'
+import { Switch } from '@/components/ui/switch'
+import { DatetimePicker } from '@/components/forms/datetime-picker'
 import { ImagePicker, type UploadedImage } from '@/components/forms/image-picker'
-import { MEAL_TYPES } from '@/lib/shared/constants/meal-types'
-import { MOODS } from '@/lib/shared/constants/moods'
+import { useT } from '@/components/i18n/locale-provider'
+import { getMealTypes } from '@/lib/shared/constants/meal-types'
+import { getMoods } from '@/lib/shared/constants/moods'
 import {
   createRecordFormSchema,
   type RecordFormInput,
@@ -31,6 +34,7 @@ import {
   nowInTimezone,
   toDatetimeLocalValue,
 } from '@/lib/shared/formatters/format-datetime-local'
+import { translateError } from '@/lib/i18n/t'
 import { apiClient } from '@/lib/client/api-client'
 import { cn } from '@/lib/utils'
 import { createBrowserClient } from '@supabase/ssr'
@@ -52,6 +56,7 @@ export function RecordForm({
   mode = 'create',
 }: RecordFormProps) {
   const router = useRouter()
+  const t = useT()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [images, setImages] = useState<UploadedImage[]>(
     defaultValues?.images?.map((img) => ({
@@ -78,10 +83,12 @@ export function RecordForm({
     defaultMealType && defaultMealType.length > 0 ? defaultMealType : undefined
 
   const formSchema = useMemo(
-    () => createRecordFormSchema(timezone),
-    [timezone]
+    () => createRecordFormSchema(timezone, t),
+    [timezone, t]
   )
-  const maxOccurredAt = useMemo(() => nowInTimezone(timezone), [timezone])
+
+  const mealTypes = useMemo(() => getMealTypes(t), [t])
+  const moods = useMemo(() => getMoods(t), [t])
 
   const {
     register,
@@ -99,16 +106,15 @@ export function RecordForm({
       occurredAt: defaultOccurredAt,
       location: defaultValues?.location ?? '',
       note: defaultValues?.note ?? '',
-      // 数据库返回 null，但 Zod v4 的 .optional() 只接受 undefined，必须转换
       mood: (defaultValues?.mood ?? undefined) as RecordFormValues['mood'],
-      tagIds: defaultValues?.tags?.map((t) => t.id) ?? [],
+      tagIds: defaultValues?.tags?.map((tag) => tag.id) ?? [],
       isShared: defaultValues?.is_shared ?? true,
     },
   })
 
   async function onSubmit(data: RecordFormValues) {
     if (images.length === 0) {
-      toast.error('请至少上传一张图片')
+      toast.error(t('record.needAtLeastOneImage'))
       return
     }
 
@@ -133,11 +139,11 @@ export function RecordForm({
       }
 
       if (result.error) {
-        toast.error(result.error.message || '保存失败，请重试')
+        toast.error(translateError(t, result.error) || t('record.saveFailed'))
         return
       }
 
-      toast.success(mode === 'edit' ? '记录已更新' : '记录已保存')
+      toast.success(mode === 'edit' ? t('record.recordUpdated') : t('record.recordSaved'))
       if (mode === 'edit' && defaultValues) {
         router.push(`/records/${defaultValues.id}`)
       } else {
@@ -146,7 +152,7 @@ export function RecordForm({
       router.refresh()
     } catch (err) {
       console.error('[RecordForm] submit error', err)
-      toast.error('保存失败，请检查网络后重试')
+      toast.error(t('record.saveFailedNetwork'))
     }
   }
 
@@ -164,10 +170,9 @@ export function RecordForm({
       })}
       className="space-y-5 pb-8"
     >
-      {/* 图片 */}
       <div>
         <Label className="mb-2 block">
-          图片 <span className="text-destructive">*</span>
+          {t('record.images')} <span className="text-destructive">*</span>
         </Label>
         <ImagePicker
           value={images}
@@ -176,25 +181,23 @@ export function RecordForm({
           disabled={isSubmitting}
         />
         {images.length === 0 && errors.mealType && (
-          <p className="mt-1 text-xs text-destructive">请至少上传一张图片</p>
+          <p className="mt-1 text-xs text-destructive">{t('record.needAtLeastOneImage')}</p>
         )}
       </div>
 
-      {/* 标题 */}
       <div>
-        <Label htmlFor="title">标题</Label>
+        <Label htmlFor="title">{t('record.title')}</Label>
         <Input
           id="title"
-          placeholder="今天吃了什么？"
+          placeholder={t('record.titlePlaceholder')}
           {...register('title')}
           className="mt-1.5"
         />
         <FieldError message={errors.title?.message} />
       </div>
 
-      {/* 金额 */}
       <div>
-        <Label htmlFor="amount">金额</Label>
+        <Label htmlFor="amount">{t('record.amount')}</Label>
         <div className="mt-1.5 flex">
           <Controller
             control={control}
@@ -231,7 +234,6 @@ export function RecordForm({
         <FieldError message={errors.amount?.message} />
       </div>
 
-      {/* 高级设置 */}
       <div className="rounded-xl border border-border">
         <button
           type="button"
@@ -239,7 +241,7 @@ export function RecordForm({
           className="flex w-full items-center justify-between px-4 py-3 text-left"
           aria-expanded={advancedOpen}
         >
-          <span className="text-sm font-medium">高级设置</span>
+          <span className="text-sm font-medium">{t('record.advancedSettings')}</span>
           <ChevronDown
             size={18}
             className={cn(
@@ -251,15 +253,14 @@ export function RecordForm({
 
         {advancedOpen && (
           <div className="space-y-5 border-t border-border px-4 py-4">
-            {/* 餐别 */}
             <div>
-              <Label>餐别</Label>
+              <Label>{t('record.mealType')}</Label>
               <Controller
                 control={control}
                 name="mealType"
                 render={({ field }) => (
                   <div className="mt-1.5 flex flex-wrap gap-2">
-                    {MEAL_TYPES.map((mt) => (
+                    {mealTypes.map((mt) => (
                       <button
                         key={mt.value}
                         type="button"
@@ -282,30 +283,34 @@ export function RecordForm({
               <FieldError message={errors.mealType?.message} />
             </div>
 
-            {/* 日期时间 */}
             <div>
               <Label htmlFor="occurredAt">
-                日期时间 <span className="text-destructive">*</span>
+                {t('record.datetime')} <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="occurredAt"
-                type="datetime-local"
-                max={maxOccurredAt}
-                {...register('occurredAt')}
-                className="mt-1.5"
+              <Controller
+                control={control}
+                name="occurredAt"
+                render={({ field }) => (
+                  <DatetimePicker
+                    id="occurredAt"
+                    value={field.value}
+                    onChange={field.onChange}
+                    timeZone={timezone}
+                    disabled={isSubmitting}
+                  />
+                )}
               />
               <FieldError message={errors.occurredAt?.message} />
             </div>
 
-            {/* 心情 */}
             <div>
-              <Label>心情</Label>
+              <Label>{t('record.mood')}</Label>
               <Controller
                 control={control}
                 name="mood"
                 render={({ field }) => (
                   <div className="mt-1.5 flex flex-wrap gap-2">
-                    {MOODS.map((m) => (
+                    {moods.map((m) => (
                       <button
                         key={m.value}
                         type="button"
@@ -327,10 +332,9 @@ export function RecordForm({
               />
             </div>
 
-            {/* 标签 */}
             {tags.length > 0 && (
               <div>
-                <Label>标签</Label>
+                <Label>{t('record.tags')}</Label>
                 <Controller
                   control={control}
                   name="tagIds"
@@ -372,24 +376,22 @@ export function RecordForm({
               </div>
             )}
 
-            {/* 地点 */}
             <div>
-              <Label htmlFor="location">地点</Label>
+              <Label htmlFor="location">{t('record.location')}</Label>
               <Input
                 id="location"
-                placeholder="在哪里吃的？"
+                placeholder={t('record.locationPlaceholder')}
                 {...register('location')}
                 className="mt-1.5"
               />
               <FieldError message={errors.location?.message} />
             </div>
 
-            {/* 备注 */}
             <div>
-              <Label htmlFor="note">备注</Label>
+              <Label htmlFor="note">{t('record.note')}</Label>
               <Textarea
                 id="note"
-                placeholder="今天吃得怎么样？"
+                placeholder={t('record.notePlaceholder')}
                 rows={3}
                 {...register('note')}
                 className="mt-1.5 resize-none"
@@ -397,35 +399,21 @@ export function RecordForm({
               <FieldError message={errors.note?.message} />
             </div>
 
-            {/* 是否分享 */}
             <div className="flex items-center justify-between rounded-xl border border-border p-3">
               <div>
-                <p className="text-sm font-medium">显示在分享页</p>
+                <p className="text-sm font-medium">{t('record.showOnSharePage')}</p>
                 <p className="text-xs text-muted-foreground">
-                  家人和对象可以在分享链接中看到此记录
+                  {t('record.showOnSharePageHint')}
                 </p>
               </div>
               <Controller
                 control={control}
                 name="isShared"
                 render={({ field }) => (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={field.value}
-                    onClick={() => field.onChange(!field.value)}
-                    className={cn(
-                      'relative h-6 w-11 overflow-hidden rounded-full transition-colors',
-                      field.value ? 'bg-primary' : 'bg-muted'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                        field.value ? 'translate-x-5' : 'translate-x-0'
-                      )}
-                    />
-                  </button>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
                 )}
               />
             </div>
@@ -433,9 +421,12 @@ export function RecordForm({
         )}
       </div>
 
-      {/* 提交 */}
       <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
-        {isSubmitting ? '保存中…' : mode === 'edit' ? '保存修改' : '保存记录'}
+        {isSubmitting
+          ? t('common.saving')
+          : mode === 'edit'
+            ? t('record.saveChanges')
+            : t('record.saveRecord')}
       </Button>
     </form>
   )

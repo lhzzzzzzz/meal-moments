@@ -2,17 +2,19 @@ import { Suspense } from 'react'
 import { PageShell } from '@/components/layout/page-shell'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
-import { RecordList } from '@/components/records/record-list'
+import { PlazaFeed } from '@/components/plaza/plaza-feed'
 import { TodaySummary } from './today-summary'
+import { getTranslator } from '@/lib/i18n/get-locale'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Meal Moments',
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: 'Meal Moments' }
 }
 
 export default async function AdminPage() {
   const user = await getCurrentUser()
+  const { t } = await getTranslator()
   const supabase = await createSupabaseServerClient()
   const { data: profileData } = await supabase
     .from('profiles')
@@ -21,30 +23,35 @@ export default async function AdminPage() {
     .single()
 
   const profile = profileData as { display_name: string } | null
-  const displayName = profile?.display_name ?? '你'
+  const displayName = profile?.display_name ?? t('common.you')
   const hour = new Date().getHours()
   const greeting =
-    hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
+    hour < 6
+      ? t('home.greetingLateNight')
+      : hour < 12
+        ? t('home.greetingMorning')
+        : hour < 18
+          ? t('home.greetingAfternoon')
+          : t('home.greetingEvening')
 
   return (
     <PageShell>
       <div className="py-6">
-        {/* 顶部问候 */}
         <div className="mb-5">
           <p className="text-sm text-muted-foreground">{greeting}，</p>
           <h1 className="text-2xl font-semibold text-foreground">{displayName}</h1>
         </div>
 
-        {/* 今日摘要 */}
         <Suspense fallback={<Skeleton className="h-24 w-full rounded-xl" />}>
           <TodaySummary userId={user!.id} />
         </Suspense>
 
-        {/* 生活流 */}
         <div className="mt-6">
-          <h2 className="mb-3 text-base font-medium text-foreground">最近记录</h2>
-          <Suspense fallback={<RecordListSkeleton />}>
-            <RecordList userId={user!.id} isOwner />
+          <h2 className="mb-3 text-base font-medium text-foreground">
+            {t('home.communityPlaza')}
+          </h2>
+          <Suspense fallback={<PlazaFeedSkeleton />}>
+            <PlazaFeed currentUserId={user!.id} />
           </Suspense>
         </div>
       </div>
@@ -52,7 +59,7 @@ export default async function AdminPage() {
   )
 }
 
-function RecordListSkeleton() {
+function PlazaFeedSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (

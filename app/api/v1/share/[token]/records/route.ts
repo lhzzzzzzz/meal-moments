@@ -10,11 +10,10 @@ export async function GET(
 ) {
   const { token } = await params
 
-  // 校验 token
   const shareLink = await getShareLinkByToken(token)
   if (!shareLink) {
     return NextResponse.json(
-      { data: null, error: { message: '这个分享链接暂时不可用。', code: 'INVALID_TOKEN' } },
+      { data: null, error: { code: 'INVALID_TOKEN', message: 'INVALID_TOKEN' } },
       { status: 404 }
     )
   }
@@ -50,10 +49,9 @@ export async function GET(
 
     if (error) throw error
 
-    // 收集所有图片路径，批量生成 signed URL
     const allPaths: string[] = []
     for (const r of data ?? []) {
-      for (const img of (r as any).record_images ?? []) {
+      for (const img of (r as { record_images?: { storage_path: string }[] }).record_images ?? []) {
         allPaths.push(img.storage_path)
       }
     }
@@ -90,7 +88,7 @@ export async function GET(
   } catch (err) {
     console.error('[GET /api/v1/share/[token]/records]', err)
     return NextResponse.json(
-      { data: null, error: { message: '获取分享内容失败' } },
+      { data: null, error: { code: 'FETCH_SHARE_FAILED', message: 'FETCH_SHARE_FAILED' } },
       { status: 500 }
     )
   }

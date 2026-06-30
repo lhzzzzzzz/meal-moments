@@ -13,6 +13,8 @@ export interface RecordWithImages extends DbRecord {
 
 export interface RecordListItem {
   id: string
+  user_id?: string
+  author_name?: string | null
   title: string
   meal_type: string
   mood: string | null

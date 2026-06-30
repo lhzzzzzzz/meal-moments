@@ -1,8 +1,7 @@
 import { getRecords } from '@/lib/server/db/records'
 import { RecordCard } from './record-card'
-import { formatDateGroup } from '@/lib/shared/formatters/format-date'
-import { formatDateOnly } from '@/lib/shared/formatters/format-date'
-import type { RecordListItem } from '@/types/record'
+import { getTranslator } from '@/lib/i18n/get-locale'
+import { groupRecordsByDate } from '@/lib/shared/group-records-by-date'
 
 interface RecordListProps {
   userId: string
@@ -21,6 +20,7 @@ export async function RecordList({
   endDate,
   sharedOnly,
 }: RecordListProps) {
+  const { locale, t } = await getTranslator()
   const { records } = await getRecords({
     userId,
     mealType,
@@ -35,16 +35,13 @@ export async function RecordList({
       <div className="flex flex-col items-center py-12 text-center">
         <p className="text-3xl">🍽️</p>
         <p className="mt-3 text-sm text-muted-foreground">
-          {isOwner
-            ? '还没有记录，上传今天的第一餐吧。'
-            : '还没有可以查看的记录。'}
+          {isOwner ? t('record.emptyMine') : t('record.emptyShared')}
         </p>
       </div>
     )
   }
 
-  // 按日期分组
-  const groups = groupByDate(records)
+  const groups = groupRecordsByDate(records, locale, t)
 
   return (
     <div className="space-y-6">
@@ -60,18 +57,4 @@ export async function RecordList({
       ))}
     </div>
   )
-}
-
-function groupByDate(records: RecordListItem[]) {
-  const map = new Map<string, RecordListItem[]>()
-  for (const r of records) {
-    const dateKey = formatDateOnly(r.occurred_at)
-    if (!map.has(dateKey)) map.set(dateKey, [])
-    map.get(dateKey)!.push(r)
-  }
-  return Array.from(map.entries()).map(([dateKey, items]) => ({
-    dateKey,
-    label: formatDateGroup(dateKey + 'T12:00:00'),
-    items,
-  }))
 }

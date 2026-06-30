@@ -3,22 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, PlusCircle, BarChart2, Settings } from 'lucide-react'
+import { useT } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
-
-const NAV_ITEMS = [
-  { href: '/admin', label: '首页', icon: Home },
-  { href: '/admin/new', label: '记录', icon: PlusCircle, isPrimary: true },
-  { href: '/stats', label: '统计', icon: BarChart2 },
-  { href: '/settings', label: '设置', icon: Settings },
-]
 
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const t = useT()
+
+  const navItems = [
+    { href: '/admin', label: t('nav.home'), icon: Home },
+    { href: '/admin/new', label: t('nav.records'), icon: PlusCircle, isPrimary: true },
+    { href: '/stats', label: t('nav.stats'), icon: BarChart2 },
+    { href: '/settings', label: t('nav.settings'), icon: Settings },
+  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-safe">
       <div className="mx-auto flex max-w-[480px] items-center justify-around">
-        {NAV_ITEMS.map(({ href, label, icon: Icon, isPrimary }) => {
+        {navItems.map(({ href, label, icon: Icon, isPrimary }) => {
           const isActive =
             href === '/admin'
               ? pathname === '/admin'

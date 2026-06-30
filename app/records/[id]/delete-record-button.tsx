@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { useT } from '@/components/i18n/locale-provider'
+import { translateError } from '@/lib/i18n/t'
 import { apiClient } from '@/lib/client/api-client'
 
 interface DeleteRecordButtonProps {
@@ -23,6 +25,7 @@ interface DeleteRecordButtonProps {
 
 export function DeleteRecordButton({ recordId }: DeleteRecordButtonProps) {
   const router = useRouter()
+  const t = useT()
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -30,12 +33,12 @@ export function DeleteRecordButton({ recordId }: DeleteRecordButtonProps) {
     setLoading(true)
     const result = await apiClient.delete(`/records/${recordId}`)
     if (result.error) {
-      toast.error(result.error.message || '删除失败')
+      toast.error(translateError(t, result.error) || t('deleteRecord.failed'))
       setLoading(false)
       return
     }
     setOpen(false)
-    toast.success('记录已删除')
+    toast.success(t('record.recordDeleted'))
     router.push('/admin')
     router.refresh()
   }
@@ -44,26 +47,24 @@ export function DeleteRecordButton({ recordId }: DeleteRecordButtonProps) {
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         className="flex h-9 items-center gap-1.5 rounded-full border border-destructive/30 bg-card px-3 text-sm text-destructive transition-colors hover:bg-destructive/5"
-        aria-label="删除记录"
+        aria-label={t('common.delete')}
       >
         <Trash2 size={14} />
-        删除
+        {t('common.delete')}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除这条记录？</AlertDialogTitle>
-          <AlertDialogDescription>
-            删除后无法恢复，相关图片也会一并删除。
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t('deleteRecord.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteRecord.description')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <Button
             onClick={handleDelete}
             disabled={loading}
             variant="destructive"
           >
-            {loading ? '删除中…' : '删除'}
+            {loading ? t('deleteRecord.deleting') : t('common.delete')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

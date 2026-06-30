@@ -1,13 +1,20 @@
 import { MobileBottomNav } from './mobile-bottom-nav'
+import { GuestBottomNav } from './guest-bottom-nav'
 import { cn } from '@/lib/utils'
 
 interface PageShellProps {
   children: React.ReactNode
   showNav?: boolean
+  nav?: 'default' | 'guest'
   className?: string
 }
 
-export function PageShell({ children, showNav = true, className }: PageShellProps) {
+export function PageShell({
+  children,
+  showNav = true,
+  nav = 'default',
+  className,
+}: PageShellProps) {
   return (
     <div className="min-h-screen bg-background">
       <main
@@ -19,7 +26,7 @@ export function PageShell({ children, showNav = true, className }: PageShellProp
       >
         {children}
       </main>
-      {showNav && <MobileBottomNav />}
+      {showNav && (nav === 'guest' ? <GuestBottomNav /> : <MobileBottomNav />)}
     </div>
   )
 }

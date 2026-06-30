@@ -2,15 +2,18 @@ import { PageShell } from '@/components/layout/page-shell'
 import { getCurrentUser } from '@/lib/server/auth/get-current-user'
 import { createSupabaseServerClient } from '@/lib/server/supabase/server'
 import { getOrCreateShareLink } from '@/lib/server/db/share-links'
+import { getTranslator } from '@/lib/i18n/get-locale'
 import { SettingsForm } from './settings-form'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: '设置 - Meal Moments',
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator()
+  return { title: `${t('settings.title')} - Meal Moments` }
 }
 
 export default async function SettingsPage() {
   const user = await getCurrentUser()
+  const { t } = await getTranslator()
   const supabase = await createSupabaseServerClient()
 
   const [profileResult, shareLink] = await Promise.all([
@@ -27,7 +30,7 @@ export default async function SettingsPage() {
   return (
     <PageShell>
       <div className="py-5">
-        <h1 className="mb-5 text-xl font-semibold">设置</h1>
+        <h1 className="mb-5 text-xl font-semibold">{t('settings.title')}</h1>
         <SettingsForm
           profile={profile}
           shareLink={shareLink}

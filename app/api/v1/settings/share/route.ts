@@ -11,7 +11,7 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof isEnabled !== 'boolean') {
     return NextResponse.json(
-      { data: null, error: { message: '参数有误' } },
+      { data: null, error: { code: 'INVALID_PARAMS', message: 'INVALID_PARAMS' } },
       { status: 400 }
     )
   }
@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ data: shareLink, error: null })
   } catch {
     return NextResponse.json(
-      { data: null, error: { message: '操作失败' } },
+      { data: null, error: { code: 'SHARE_OPERATION_FAILED', message: 'SHARE_OPERATION_FAILED' } },
       { status: 500 }
     )
   }

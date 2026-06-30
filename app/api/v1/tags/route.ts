@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ data: tags, error: null })
   } catch {
     return NextResponse.json(
-      { data: null, error: { message: '获取标签失败' } },
+      { data: null, error: { code: 'FETCH_TAGS_FAILED', message: 'FETCH_TAGS_FAILED' } },
       { status: 500 }
     )
   }
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const { name, color } = await request.json()
   if (!name) {
     return NextResponse.json(
-      { data: null, error: { message: '标签名不能为空' } },
+      { data: null, error: { code: 'TAG_NAME_REQUIRED', message: 'TAG_NAME_REQUIRED' } },
       { status: 400 }
     )
   }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: tag, error: null }, { status: 201 })
   } catch {
     return NextResponse.json(
-      { data: null, error: { message: '创建标签失败' } },
+      { data: null, error: { code: 'CREATE_TAG_FAILED', message: 'CREATE_TAG_FAILED' } },
       { status: 500 }
     )
   }
