@@ -213,7 +213,9 @@
   "imagePicker": {
     "maxImages": "Upload at most {max} photos",
     "unsupportedFormat": "{name}: unsupported format. Use JPG, PNG, or WebP.",
-    "uploadFailed": "Upload failed, please try again"
+    "uploadFailed": "Upload failed, please try again",
+    "takePhoto": "Take photo",
+    "chooseFromAlbum": "Choose from album"
   },
   "imageCompress": {
     "loadFailed": "Failed to load image",

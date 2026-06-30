@@ -2,10 +2,15 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { Plus, X, Loader2 } from 'lucide-react'
+import { Plus, X, Loader2, Camera, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { createBrowserClient } from '@supabase/ssr'
 import { useT } from '@/components/i18n/locale-provider'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { compressImage, isAllowedImageType } from '@/lib/client/image-compress'
 import { cn } from '@/lib/utils'
 
@@ -34,8 +39,10 @@ export function ImagePicker({
   maxImages = 6,
 }: ImagePickerProps) {
   const t = useT()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState<string[]>([])
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,11 +107,23 @@ export function ImagePicker({
       }
     }
 
-    if (inputRef.current) inputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+    if (galleryInputRef.current) galleryInputRef.current.value = ''
   }
 
   function removeImage(index: number) {
     onChange(value.filter((_, i) => i !== index))
+  }
+
+  function openInput(input: 'camera' | 'gallery') {
+    setMenuOpen(false)
+    requestAnimationFrame(() => {
+      if (input === 'camera') {
+        cameraInputRef.current?.click()
+      } else {
+        galleryInputRef.current?.click()
+      }
+    })
   }
 
   const isUploading = uploading.length > 0
@@ -148,23 +167,50 @@ export function ImagePicker({
         ))}
 
         {canAdd && !isUploading && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className={cn(
-              'flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-border',
-              'text-muted-foreground transition-colors hover:border-primary hover:text-primary',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-            )}
-            aria-label={t('common.addImage')}
-          >
-            <Plus size={24} />
-          </button>
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <PopoverTrigger
+              className={cn(
+                'flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-border',
+                'text-muted-foreground transition-colors hover:border-primary hover:text-primary',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+              )}
+              aria-label={t('common.addImage')}
+            >
+              <Plus size={24} />
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-48 p-1">
+              <button
+                type="button"
+                onClick={() => openInput('camera')}
+                className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted"
+              >
+                <Camera size={18} className="shrink-0 text-muted-foreground" />
+                {t('imagePicker.takePhoto')}
+              </button>
+              <button
+                type="button"
+                onClick={() => openInput('gallery')}
+                className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted"
+              >
+                <ImageIcon size={18} className="shrink-0 text-muted-foreground" />
+                {t('imagePicker.chooseFromAlbum')}
+              </button>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => e.target.files && handleFiles(e.target.files)}
+      />
+
+      <input
+        ref={galleryInputRef}
         type="file"
         accept="image/jpeg,image/jpg,image/png,image/webp"
         multiple

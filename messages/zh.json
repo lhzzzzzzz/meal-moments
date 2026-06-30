@@ -213,7 +213,9 @@
   "imagePicker": {
     "maxImages": "最多上传 {max} 张图片",
     "unsupportedFormat": "{name} 格式不支持，请上传 JPG、PNG 或 WebP 图片",
-    "uploadFailed": "上传失败，请重试"
+    "uploadFailed": "上传失败，请重试",
+    "takePhoto": "拍照",
+    "chooseFromAlbum": "从相册选择"
   },
   "imageCompress": {
     "loadFailed": "图片加载失败",
